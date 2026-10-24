@@ -1,9 +1,9 @@
 // The player's phone: passport, roles, map, compass, chat and leaderboard.
 // No clocks, countdowns or deadlines: final time appears only after finishing.
 
-import { h, mount, send, toast, duration, serverNow, clockHMS, STATIONS, PLACE_LABEL } from "./core.js?v=c2cd978a97";
-import { boardTable, seals, chatBox, makeMap, pinIcon } from "./widgets.js?v=c2cd978a97";
-import * as compass from "./compass.js?v=c2cd978a97";
+import { h, mount, send, toast, duration, serverNow, clockHMS, STATIONS, PLACE_LABEL } from "./core.js?v=2d383b8732";
+import { boardTable, seals, chatBox, makeMap, pinIcon, envelopeCard } from "./widgets.js?v=2d383b8732";
+import * as compass from "./compass.js?v=2d383b8732";
 
 const QUICK = ["A phone died", "We are lost", "Need a walker"];
 const ROUTE = (n) => { const i = (n - 1) % 4; return [0, 1, 2, 3].map((k) => STATIONS[(i + k) % 4]); };
@@ -11,6 +11,7 @@ const ROUTE = (n) => { const i = (n - 1) % 4; return [0, 1, 2, 3].map((k) => STA
 export function playerView(root) {
   const parts = {
     head: h("section.frame.gilded"),
+    envelope: h("section.section"),
     setup: h("section.section"),
     passport: h("section.section"),
     roles: h("section.section"),
@@ -21,7 +22,7 @@ export function playerView(root) {
     board: h("section.section"),
   };
   mount(root, Object.values(parts));
-  let state = null, mapCtx = null, chatEl = null, chatKey = "", nameInput = null, compassResult = null;
+  let state = null, mapCtx = null, chatEl = null, chatKey = "", nameInput = null, compassResult = null, envelopeKey;
 
   function render(s) {
     state = s;
@@ -33,8 +34,11 @@ export function playerView(root) {
     mount(parts.head,
       h("h1", t.name),
       h("p.muted", `Team ${t.number}`),
-      h("p", t.finished ? "Finished. Well done, travellers." : t.started ? "The hunt is on. Follow your riddles." : "Wait at the Gate. Your team starts when the Gate volunteer says so."),
+      h("p", t.finished ? "Finished. Well done, travellers." : t.started ? "The hunt is on. Follow your riddles." :
+        s.envelope ? "Decode the envelope, then go to the Gate. Your team starts when the Gate volunteer says so." :
+        "Wait in the DII Hall. Your envelope opens on this screen at 12:00."),
       t.finished ? h("p", h("strong.num", `Final time ${duration(t.score)}`), t.hints ? h("span.muted", ` (includes ${t.hints} hint${t.hints > 1 ? "s" : ""} × 3 min)`) : null) : null);
+    renderEnvelope(s, t);
     renderSetup(t);
     mount(parts.passport, t.started ? [
       h("h2", "Passport"), seals(t.stamps, ROUTE(t.number)),
@@ -46,6 +50,23 @@ export function playerView(root) {
     renderMap(s);
     renderChat(s);
     mount(parts.board, h("h2", "Leaderboard"), boardTable(s.board, t.number));
+  }
+
+  function renderEnvelope(s, t) {
+    const env = s.envelope;
+    const key = env ? `${env.opened_at}|${t.started ? 1 : 0}` : "closed";
+    if (key === envelopeKey) return; // the square keeps its highlights between updates
+    const wasClosed = envelopeKey === "closed";
+    envelopeKey = key;
+    if (!env) { mount(parts.envelope); return; }
+    const card = h("div.frame.envelope", envelopeCard(env));
+    // Once the team is on its way, keep the envelope but fold it away.
+    mount(parts.envelope, t.started ? h("details", h("summary", "The envelope"), card) : card);
+    if (wasClosed) {
+      toast("The envelope is open!");
+      if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
+      parts.envelope.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }
 
   function renderSetup(t) {

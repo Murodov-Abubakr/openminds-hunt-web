@@ -1,7 +1,7 @@
 // Volunteer screens: Registration, Gate, Keepers and Door. Big buttons, one tap each.
 
-import { h, mount, send, toast, call, clockHM, serverNow, STATIONS, PLACE_LABEL } from "./core.js?v=c2cd978a97";
-import { boardTable, showQr } from "./widgets.js?v=c2cd978a97";
+import { h, mount, send, toast, call, clockHM, serverNow, STATIONS, PLACE_LABEL } from "./core.js?v=2d383b8732";
+import { boardTable, showQr } from "./widgets.js?v=2d383b8732";
 
 function keepFocus(container, fn) {
   // Skip re-rendering a region while someone is typing in it.

@@ -1,8 +1,8 @@
 // Control Room (control) and Admin (admin): table, map, alerts, chat, log, people, settings.
 
-import { h, mount, send, toast, call, clockHM, duration, session, API, STATIONS, PLACE_LABEL } from "./core.js?v=c2cd978a97";
-import { boardTable, chatBox, dots, makeMap, pinIcon, confirmTyped } from "./widgets.js?v=c2cd978a97";
-import { linkAction, addMemberForm } from "./staff.js?v=c2cd978a97";
+import { h, mount, send, toast, call, clockHM, duration, session, API, STATIONS, PLACE_LABEL } from "./core.js?v=2d383b8732";
+import { boardTable, chatBox, dots, makeMap, pinIcon, confirmTyped } from "./widgets.js?v=2d383b8732";
+import { linkAction, addMemberForm } from "./staff.js?v=2d383b8732";
 
 const TABS = [["overview", "Teams"], ["map", "Map"], ["chat", "Chat"], ["log", "Log"], ["people", "People"], ["settings", "Settings"]];
 const ROLES = ["control", "registration", "gate", "keeper:reed", "keeper:leaf", "keeper:bird", "keeper:stage", "door", "admin"];
@@ -218,7 +218,15 @@ export function controlView(root) {
     return h("div.split-cols",
       h("div", h("h2", "Feature switches"), switches, h("h2", "Thresholds"), thresholds,
         s.security.length ? [h("h2", "Security alerts"), h("ul.log", s.security.map((a) => h("li", h("time", clockHM(a.ts)), h("span.grow", a.detail || a.kind))))] : null),
-      h("div.stack", h("h2", "End of game"),
+      h("div.stack", h("h2", "Envelope (DII Hall, 12:00)"),
+        s.envelope
+          ? h("p", h("span.chip.solved", "Open"), ` since ${clockHM(s.envelope.opened_at)}. Every player sees it. To hide it again, use Undo in the Log.`)
+          : h("p", "Closed. Players cannot see any of it until you open it."),
+        h("button.big.primary", {
+          type: "button", disabled: !!s.envelope,
+          onclick: () => { if (confirm("Open the envelopes now? Every signed-in player sees the coded line and clue at once.")) send("/api/admin/envelope"); },
+        }, s.envelope ? "Envelopes are open" : "Open the envelopes for everyone"),
+        h("h2", { style: "margin-top:2rem" }, "End of game"),
         h("button.big.primary", { type: "button", disabled: s.ended, onclick: () => { if (confirmTyped("END", "End the game? All actions freeze and results are final.")) send("/api/admin/end"); } }, s.ended ? "Game ended" : "End game"),
         h("button.big", { type: "button", onclick: exportCsv }, "Export results (CSV)"),
         h("h2", { style: "margin-top:2rem" }, "After the 09:00 test"),

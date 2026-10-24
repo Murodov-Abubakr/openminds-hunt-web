@@ -1,6 +1,6 @@
 // Reusable pieces: leaderboard, seals, chat, map and QR overlay.
 
-import { h, mount, duration, clockHM, loadScript, loadStyle, send, toast, STATIONS, PLACE_LABEL } from "./core.js?v=c2cd978a97";
+import { h, mount, duration, clockHM, loadScript, loadStyle, send, toast, STATIONS, PLACE_LABEL } from "./core.js?v=2d383b8732";
 
 const LEAFLET = {
   js: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js",
@@ -32,6 +32,39 @@ export function boardTable(board, myTeam) {
         h("td", dots(r.stamps)),
         h("td.time", r.finished ? duration(r.time) : "")))),
   ]);
+}
+
+// Envelope: the DII Hall cipher card, sent by the server only once the Admin opens it ---------
+
+const ABC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+/** 26 × 26 Vigenère square. Tap a row or column letter to highlight it. */
+export function vigenereSquare() {
+  let row = -1, col = -1;
+  const cells = [];
+  const paint = () => cells.forEach(({ el, r, c }) => el.classList.toggle("hl", r === row || c === col));
+  const pick = (r, c) => () => { if (r >= 0) row = row === r ? -1 : r; if (c >= 0) col = col === c ? -1 : c; paint(); };
+  const head = h("tr", h("th", { scope: "col" }, ""), [...ABC].map((ch, c) => {
+    const el = h("th", { scope: "col" }, h("button.vsq-key", { type: "button", "aria-label": `Highlight column ${ch}`, onclick: pick(-1, c) }, ch));
+    cells.push({ el, r: -2, c });
+    return el;
+  }));
+  const body = [...ABC].map((key, r) => h("tr",
+    (() => { const el = h("th", { scope: "row" }, h("button.vsq-key", { type: "button", "aria-label": `Highlight row ${key}`, onclick: pick(r, -1) }, key)); cells.push({ el, r, c: -2 }); return el; })(),
+    [...ABC].map((_, c) => { const el = h("td", ABC[(r + c) % 26]); cells.push({ el, r, c }); return el; })));
+  return h("div.vsq-wrap", h("table.vsq", { "aria-label": "Vigenère square" }, h("thead", head), h("tbody", body)));
+}
+
+export function envelopeCard(env) {
+  return h("div.stack",
+    h("h2", env.title || "The envelope"),
+    env.story ? h("p", env.story) : null,
+    env.verse ? h("blockquote.verse", h("p", { lang: "tg" }, env.verse), env.verse_note ? h("p.muted.small", env.verse_note) : null) : null,
+    h("p.small.muted", "Coded line"),
+    h("p.cipher", { translate: "no" }, env.coded_line),
+    env.key_clue ? [h("p.small.muted", "Key clue"), h("p", h("strong", env.key_clue))] : null,
+    env.instructions ? h("p", env.instructions) : null,
+    h("details.vsq-details", { open: true }, h("summary", "Vigenère square"), vigenereSquare()));
 }
 
 export function seals(stamps, order = STATIONS) {
