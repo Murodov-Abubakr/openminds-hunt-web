@@ -1,9 +1,9 @@
 // Boot: exchange the link token, then render the screen for this person's role.
 
-import { h, mount, call, session, SIGN_OUT, liveStream, onQueueChange, flush, initTheme, setSignedOutHandler, syncClock, toast, API } from "./core.js?v=54dfeb324d";
-import { playerView } from "./player.js?v=54dfeb324d";
-import { registrationView, gateView, placeView } from "./staff.js?v=54dfeb324d";
-import { controlView } from "./control.js?v=54dfeb324d";
+import { h, mount, call, session, SIGN_OUT, liveStream, onQueueChange, flush, initTheme, setSignedOutHandler, syncClock, toast, API } from "./core.js?v=2d383b8732";
+import { playerView } from "./player.js?v=2d383b8732";
+import { registrationView, gateView, placeView } from "./staff.js?v=2d383b8732";
+import { controlView } from "./control.js?v=2d383b8732";
 
 const main = document.getElementById("main");
 const net = document.getElementById("net");

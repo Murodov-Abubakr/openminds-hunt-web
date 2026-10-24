@@ -1,6 +1,6 @@
 // Reusable pieces: leaderboard, seals, chat, map and QR overlay.
 
-import { h, mount, duration, clockHM, loadScript, loadStyle, send, toast, STATIONS, PLACE_LABEL } from "./core.js?v=54dfeb324d";
+import { h, mount, duration, clockHM, loadScript, loadStyle, send, toast, STATIONS, PLACE_LABEL } from "./core.js?v=2d383b8732";
 
 const LEAFLET = {
   js: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js",
