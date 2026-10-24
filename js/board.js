@@ -1,7 +1,7 @@
 // Public read-only leaderboard for a TV or projector. No login, no clocks, no names of members.
 
-import { h, mount, liveStream, initTheme } from "./core.js?v=b18daf852a";
-import { boardTable } from "./widgets.js?v=b18daf852a";
+import { h, mount, liveStream, initTheme } from "./core.js?v=5600cd1879";
+import { boardTable } from "./widgets.js?v=5600cd1879";
 
 initTheme(document.getElementById("theme"));
 const main = document.getElementById("main");

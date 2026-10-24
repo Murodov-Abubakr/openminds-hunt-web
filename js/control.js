@@ -1,11 +1,12 @@
 // Control Room (control) and Admin (admin): table, map, alerts, chat, log, people, settings.
 
-import { h, mount, send, toast, call, clockHM, duration, session, API, STATIONS, PLACE_LABEL } from "./core.js?v=b18daf852a";
-import { boardTable, chatBox, dots, makeMap, pinIcon, confirmTyped } from "./widgets.js?v=b18daf852a";
-import { linkAction, addMemberForm } from "./staff.js?v=b18daf852a";
+import { h, mount, send, toast, call, clockHM, duration, session, API, STATIONS, PLACE_LABEL } from "./core.js?v=5600cd1879";
+import { boardTable, chatBox, dots, makeMap, pinIcon, confirmTyped } from "./widgets.js?v=5600cd1879";
+import { linkAction, addMemberForm } from "./staff.js?v=5600cd1879";
 
 const TABS = [["overview", "Teams"], ["map", "Map"], ["chat", "Chat"], ["log", "Log"], ["people", "People"], ["settings", "Settings"]];
 const ROLES = ["control", "registration", "gate", "keeper:reed", "keeper:leaf", "keeper:bird", "keeper:stage", "door", "admin"];
+const ROLE_TEXT = { player: "Player", control: "Control Room", registration: "Registration", gate: "Gate", "keeper:reed": "Keeper Reed", "keeper:leaf": "Keeper Leaf", "keeper:bird": "Keeper Bird", "keeper:stage": "Keeper Stage", door: "Door", admin: "Admin" };
 const SWITCH_TEXT = { route_hint: "Paid route hint (I’m stuck)", roles: "Roles inside teams", compass: "Compass and GPS", chat: "Chat" };
 const THRESH_TEXT = { q_distance_m: "“?” distance (m)", split_distance_m: "Split distance (m)", split_duration_s: "Split duration (s)", stuck_alert_min: "Stuck alert (min)" };
 
@@ -163,6 +164,7 @@ export function controlView(root) {
       h("button.icon-btn", { type: "button", onclick: () => linkAction(p.id, "email") }, "Resend"),
       canShow(role) ? h("button.icon-btn.danger", { type: "button", onclick: () => { if (confirm(`Sign ${p.name} out everywhere and cancel their links?`)) call("POST", "/api/people/revoke", { person: p.id }).then(() => toast("Revoked")).catch((e) => toast(e.message, true)); } }, "Revoke") : null,
       canShow(role) ? h("button.icon-btn", { type: "button", onclick: () => editPerson(p) }, "Edit") : null,
+      isAdmin() && p.id !== state.me.id ? roleSelect(p, role) : null,
       canShow(role) && p.id !== state.me.id ? h("button.icon-btn.danger", {
         type: "button",
         onclick: () => {
@@ -184,13 +186,28 @@ export function controlView(root) {
     return [
       s.smtp_ready ? null : h("p.alert", "Email is not configured on the server. Use Show QR for every login."),
       h("div.split-cols",
-        h("div", h("h2", "Staff"), h("ul.log", s.staff.map((p) => personRow(p, p.role))), isAdmin() ? invite() : null),
+        h("div",
+          h("h2", "Staff"), h("ul.log", s.staff.map((p) => personRow(p, p.role))),
+          h("h2", { style: "margin-top:1.5rem" }, "Accounts without a team"),
+          s.unassigned.length ? h("ul.log", s.unassigned.map((p) => personRow(p, "player"))) : h("p.muted", "Everyone who signed up is in a team."),
+          isAdmin() ? invite() : null),
         h("div", h("h2", "Teams"), s.teams.map((t) => h("details.card", { open: openTeam === t.number, style: "margin-bottom:.5rem" },
           h("summary", h("strong", `${t.number}. ${t.name}`)),
           renameForm(t),
           h("ul.log", t.members.map((m) => personRow(m, "player"))),
           t.members.length < 6 ? addMemberForm(t.number) : null)))),
     ];
+  }
+
+  function roleSelect(p, role) {
+    const sel = h("select", { "aria-label": `Role for ${p.name}`, style: "width:auto;min-height:40px;padding:.3rem .6rem" },
+      ["player", ...ROLES].map((r) => h("option", { value: r, selected: r === role }, ROLE_TEXT[r] || r)));
+    sel.addEventListener("change", () => {
+      const next = sel.value;
+      if (!confirm(`Make ${p.name} ${ROLE_TEXT[next] || next}?` + (role === "player" ? " They leave any team they are forming." : ""))) { sel.value = role; return; }
+      call("POST", "/api/people/role", { person: p.id, role: next }).then(() => toast(`${p.name} is now ${ROLE_TEXT[next] || next}`)).catch((e) => { sel.value = role; toast(e.message, true); });
+    });
+    return sel;
   }
 
   function renameForm(t) {

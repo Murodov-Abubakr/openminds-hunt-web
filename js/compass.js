@@ -1,7 +1,7 @@
 // Location sharing and the Compass. Location is read only while the page is visible.
 // All distance maths happens on the server; this phone only receives a ring band.
 
-import { call, toast } from "./core.js?v=b18daf852a";
+import { call, toast } from "./core.js?v=5600cd1879";
 
 const CONSENT_KEY = "hunt.gps-consent";
 let watchId = null, lastSent = 0, lastPos = null, interval = 12, onResult = () => {};

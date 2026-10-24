@@ -1,9 +1,9 @@
 // Boot: exchange the link token, then render the screen for this person's role.
 
-import { h, mount, call, session, SIGN_OUT, liveStream, onQueueChange, flush, initTheme, setSignedOutHandler, syncClock, toast, API } from "./core.js?v=b18daf852a";
-import { playerView } from "./player.js?v=b18daf852a";
-import { registrationView, gateView, placeView } from "./staff.js?v=b18daf852a";
-import { controlView } from "./control.js?v=b18daf852a";
+import { h, mount, call, session, SIGN_OUT, liveStream, onQueueChange, flush, initTheme, setSignedOutHandler, syncClock, toast, API } from "./core.js?v=5600cd1879";
+import { playerView } from "./player.js?v=5600cd1879";
+import { registrationView, gateView, placeView } from "./staff.js?v=5600cd1879";
+import { controlView } from "./control.js?v=5600cd1879";
 
 const main = document.getElementById("main");
 const net = document.getElementById("net");
@@ -11,7 +11,7 @@ const queued = document.getElementById("queued");
 const who = document.getElementById("who");
 initTheme(document.getElementById("theme"));
 
-let stream = null, render = null;
+let stream = null, render = null, currentRole = null;
 
 function landing(message) {
   if (stream) stream.stop();
@@ -123,7 +123,9 @@ function pickView(role) {
 
 function showState(s) {
   syncClock(s.now);
+  if (render && s.me.role !== currentRole) render = null; // the Admin changed this person's role
   if (!render) {
+    currentRole = s.me.role;
     main.className = ["admin", "control"].includes(s.me.role) ? "wide" : "";
     mount(main);
     render = pickView(s.me.role)(main);
