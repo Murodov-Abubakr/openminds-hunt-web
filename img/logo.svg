@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="The Forgotten Manuscript">
+  <title>The Forgotten Manuscript</title>
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3d98b"/>
+      <stop offset=".55" stop-color="#d9b45a"/>
+      <stop offset="1" stop-color="#a87f2a"/>
+    </linearGradient>
+  </defs>
+  <!-- Seal -->
+  <circle cx="32" cy="32" r="30" fill="#0e1626"/>
+  <circle cx="32" cy="32" r="28.5" fill="none" stroke="url(#gold)" stroke-width="2.5"/>
+  <circle cx="32" cy="32" r="23" fill="none" stroke="#d9b45a" stroke-width="1" stroke-dasharray="1.6 2.4" opacity=".7"/>
+  <!-- The route loop, clockwise: reed, leaf, bird, stage -->
+  <circle cx="32" cy="3.5" r="3.6" fill="#4cc38a" stroke="#0e1626" stroke-width="1.2"/>
+  <circle cx="60.5" cy="32" r="3.6" fill="#f2c94c" stroke="#0e1626" stroke-width="1.2"/>
+  <circle cx="32" cy="60.5" r="3.6" fill="#62adff" stroke="#0e1626" stroke-width="1.2"/>
+  <circle cx="3.5" cy="32" r="3.6" fill="#ff6b5e" stroke="#0e1626" stroke-width="1.2"/>
+  <!-- Reed-pen nib that is also a keyhole -->
+  <path d="M32 12.5 C40.5 20 43 29 32 50.5 C21 29 23.5 20 32 12.5 Z" fill="url(#gold)"/>
+  <circle cx="32" cy="28" r="3.4" fill="#0e1626"/>
+  <path d="M32 31 L32 46" stroke="#0e1626" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M26.5 19.5 Q32 16.5 37.5 19.5" fill="none" stroke="#0e1626" stroke-width="1" opacity=".55"/>
+</svg>
