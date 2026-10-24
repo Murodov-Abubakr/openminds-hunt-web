@@ -1,9 +1,9 @@
 // The player's phone: passport, roles, map, compass, chat and leaderboard.
 // No clocks, countdowns or deadlines: final time appears only after finishing.
 
-import { h, mount, send, toast, duration, serverNow, clockHMS, STATIONS, PLACE_LABEL } from "./core.js?v=2d383b8732";
-import { boardTable, seals, chatBox, makeMap, pinIcon, envelopeCard } from "./widgets.js?v=2d383b8732";
-import * as compass from "./compass.js?v=2d383b8732";
+import { h, mount, send, toast, duration, serverNow, clockHMS, STATIONS, PLACE_LABEL } from "./core.js?v=15cd746ac8";
+import { boardTable, seals, chatBox, makeMap, pinIcon, envelopeCard } from "./widgets.js?v=15cd746ac8";
+import * as compass from "./compass.js?v=15cd746ac8";
 
 const QUICK = ["A phone died", "We are lost", "Need a walker"];
 const ROUTE = (n) => { const i = (n - 1) % 4; return [0, 1, 2, 3].map((k) => STATIONS[(i + k) % 4]); };
@@ -28,7 +28,12 @@ export function playerView(root) {
     state = s;
     const t = s.team;
     if (!t) {
-      mount(parts.head, h("h1", "Not on a team"), h("p", "Ask the registration desk to add you to a team."));
+      for (const part of Object.values(parts)) if (part !== parts.envelope && part !== parts.setup) mount(part);
+      mount(parts.head, h("h1", `Welcome, ${s.me.name}`),
+        h("p", s.envelope ? "Form your team, decode the envelope together, then go to the Gate." : "Form your team now. Your envelope opens on this screen at 12:00."));
+      renderEnvelope(s, null);
+      renderNoTeam(s);
+      mount(parts.board, h("h2", "Leaderboard"), boardTable(s.board));
       return;
     }
     mount(parts.head,
@@ -54,14 +59,15 @@ export function playerView(root) {
 
   function renderEnvelope(s, t) {
     const env = s.envelope;
-    const key = env ? `${env.opened_at}|${t.started ? 1 : 0}` : "closed";
+    const started = !!(t && t.started);
+    const key = env ? `${env.opened_at}|${started ? 1 : 0}` : "closed";
     if (key === envelopeKey) return; // the square keeps its highlights between updates
     const wasClosed = envelopeKey === "closed";
     envelopeKey = key;
     if (!env) { mount(parts.envelope); return; }
     const card = h("div.frame.envelope", envelopeCard(env));
     // Once the team is on its way, keep the envelope but fold it away.
-    mount(parts.envelope, t.started ? h("details", h("summary", "The envelope"), card) : card);
+    mount(parts.envelope, started ? h("details", h("summary", "The envelope"), card) : card);
     if (wasClosed) {
       toast("The envelope is open!");
       if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
@@ -69,21 +75,53 @@ export function playerView(root) {
     }
   }
 
+  function typing(part) {
+    return part.contains(document.activeElement) && ["INPUT", "TEXTAREA"].includes(document.activeElement.tagName);
+  }
+
+  function renderNoTeam(s) {
+    if (typing(parts.setup)) return;
+    const name = h("input", { id: "new-team-name", maxlength: 24, autocomplete: "off", spellcheck: "false", placeholder: "Optional…" });
+    mount(parts.setup, h("div.frame.stack",
+      h("h2", "Form your team"),
+      h("p", "One person creates the team and becomes its leader, then adds the others by the email they signed up with. Teams have up to 6 people."),
+      h("form.stack", { onsubmit: (e) => { e.preventDefault(); send("/api/team/form", { name: name.value.trim() }).then((r) => r.ok && toast(`Team ${r.team} created. Add your teammates.`)); } },
+        h("label", { for: "new-team-name" }, "Team name"), name,
+        h("button.big.primary", { type: "submit" }, "Create a team and lead it")),
+      h("p", "Joining someone else’s team? Tell their leader your email:"),
+      h("p", h("strong", { translate: "no" }, s.me.email || "(no email)"))));
+  }
+
   function renderSetup(t) {
     if (t.started) { mount(parts.setup); nameInput = null; return; }
-    if (nameInput && document.activeElement === nameInput) return; // don't disturb typing
+    if (typing(parts.setup)) return; // don't disturb typing
     const meLeader = t.leader === state.me.id;
     nameInput = h("input", { id: "team-name", maxlength: 24, value: t.custom_name || "", placeholder: `Team ${t.number}…`, autocomplete: "off", spellcheck: "false" });
+    const addEmail = h("input", { id: "add-email", type: "email", inputmode: "email", autocomplete: "off", spellcheck: "false", maxlength: 120, placeholder: "Their email…" });
+    const full = t.members.length >= 6;
     mount(parts.setup,
-      h("h2", "Before the Gate"),
-      h("ul.stack", { style: "padding-left:1.1rem" }, t.members.map((m) =>
-        h("li", m.name, m.leader ? h("strong", " (leader)") : null, h("span.muted.small", m.joined ? " · phone joined" : " · not joined yet")))),
+      h("h2", "Your team"),
+      h("ul.log", t.members.map((m) => h("li",
+        h("span.grow", m.name, m.leader ? h("strong", " (leader)") : null, m.id === state.me.id ? h("span.muted.small", " · you") : null),
+        meLeader && m.id !== state.me.id ? h("button.icon-btn.danger", {
+          type: "button", onclick: () => { if (confirm(`Remove ${m.name} from the team?`)) send("/api/team/remove", { person: m.id }); },
+        }, "Remove") : null))),
+      h("p.muted.small", `${t.members.length} of 6 people.` + (t.members.length < 3 ? " Teams usually have at least 3." : "")),
+      meLeader && !full ? h("form.row", { style: "margin:.75rem 0", onsubmit: (e) => {
+        e.preventDefault();
+        send("/api/team/add", { email: addEmail.value.trim() }).then((r) => { if (r.ok) { toast(`${r.name} joined your team`); addEmail.value = ""; } });
+      } }, h("div.grow", h("label.sr-only", { for: "add-email" }, "Teammate's email"), addEmail), h("button.primary", { type: "submit" }, "Add")) : null,
+      meLeader ? h("p.muted.small", "Teammates must create an account first, then you add them by that email.") : null,
       h("button.big" + (meLeader ? "" : ".primary"), { type: "button", disabled: meLeader, onclick: () => send("/api/team/leader") },
         meLeader ? "You are the leader" : "I’m the leader"),
       meLeader ? h("form.stack", { style: "margin-top:1rem", onsubmit: (e) => { e.preventDefault(); send("/api/team/name", { name: nameInput.value }).then((r) => r.ok && toast("Name saved")); } },
         h("label", { for: "team-name" }, "Team name (up to 24 letters)"),
         nameInput,
-        h("button.primary", { type: "submit" }, "Save name")) : h("p.muted", "The leader can be changed until the Gate starts your team."));
+        h("button.primary", { type: "submit" }, "Save name")) : h("p.muted", "The leader can be changed until the Gate starts your team."),
+      !meLeader || t.members.length === 1 ? h("button.big.ghost", {
+        type: "button", style: "margin-top:1rem",
+        onclick: () => { if (confirm("Leave this team?")) send("/api/team/leave", {}); },
+      }, "Leave this team") : null);
   }
 
   function renderRoles(s) {

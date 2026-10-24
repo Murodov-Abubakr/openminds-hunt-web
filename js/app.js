@@ -1,9 +1,9 @@
 // Boot: exchange the link token, then render the screen for this person's role.
 
-import { h, mount, call, session, SIGN_OUT, liveStream, onQueueChange, flush, initTheme, setSignedOutHandler, syncClock, toast, API } from "./core.js?v=2d383b8732";
-import { playerView } from "./player.js?v=2d383b8732";
-import { registrationView, gateView, placeView } from "./staff.js?v=2d383b8732";
-import { controlView } from "./control.js?v=2d383b8732";
+import { h, mount, call, session, SIGN_OUT, liveStream, onQueueChange, flush, initTheme, setSignedOutHandler, syncClock, toast, API } from "./core.js?v=15cd746ac8";
+import { playerView } from "./player.js?v=15cd746ac8";
+import { registrationView, gateView, placeView } from "./staff.js?v=15cd746ac8";
+import { controlView } from "./control.js?v=15cd746ac8";
 
 const main = document.getElementById("main");
 const net = document.getElementById("net");
@@ -25,14 +25,65 @@ function landing(message) {
     h("h1", "The Forgotten ", h("span.gold", "Manuscript")),
     h("p", "Open Minds treasure hunt."),
     message ? h("p.frame", { role: "alert" }, message) : null,
-    h("p", "Open the personal link from your email on the phone you will carry today, or sign in below with your email and the code from that email."),
-    signInForm(),
+    h("p", "Create your account on the phone you will carry today. Already have one? Sign in."),
+    authForms(),
     h("p.muted.small", "No email? Ask the registration desk to show your QR code. The paper passport is the official record; if this app stops, the game goes on.")));
+}
+
+function authForms() {
+  const box = h("div");
+  const tabs = h("div.tabs", { role: "tablist", "aria-label": "Account", style: "margin-top:1.5rem" });
+  const show = (which) => {
+    mount(tabs, [["create", "Create account"], ["signin", "Sign in"]].map(([k, label]) =>
+      h("button", { type: "button", role: "tab", "aria-selected": String(which === k), onclick: () => show(k) }, label)));
+    mount(box, which === "create" ? signUpForm() : signInForm());
+  };
+  show("create");
+  return h("div", tabs, box);
+}
+
+function passwordField(id, autocomplete) {
+  const input = h("input", { id, name: "password", type: "password", autocomplete, spellcheck: "false", maxlength: 128, required: true });
+  const toggle = h("button.icon-btn", {
+    type: "button", "aria-pressed": "false",
+    onclick: (e) => { const reveal = input.type === "password"; input.type = reveal ? "text" : "password"; e.currentTarget.setAttribute("aria-pressed", String(reveal)); e.currentTarget.textContent = reveal ? "Hide" : "Show"; },
+  }, "Show");
+  return { input, row: h("div.row", h("div.grow", input), toggle) };
+}
+
+function signUpForm() {
+  const name = h("input", { id: "su-name", name: "name", autocomplete: "name", maxlength: 40, required: true, placeholder: "Your name…" });
+  const email = h("input", { id: "su-email", type: "email", name: "email", autocomplete: "email", inputmode: "email", spellcheck: "false", maxlength: 120, required: true, placeholder: "Your email…" });
+  const pw = passwordField("su-pw", "new-password");
+  const button = h("button.big.primary", { type: "submit" }, "Create account");
+  return h("form.frame.stack.signin-form", {
+    onsubmit: async (e) => {
+      e.preventDefault();
+      if (button.disabled) return;
+      if (pw.input.value.length < 8) { toast("Use a password of at least 8 characters.", true); pw.input.focus(); return; }
+      button.disabled = true;
+      button.textContent = "Creating…";
+      try {
+        const res = await call("POST", "/api/signup", { name: name.value.trim(), email: email.value.trim(), password: pw.input.value, device: navigator.userAgent.slice(0, 60) }, { auth: false });
+        session.set(res.session);
+        start();
+      } catch (err) {
+        toast(err.message, true);
+        button.disabled = false;
+        button.textContent = "Create account";
+      }
+    },
+  },
+  h("div.field", h("label", { for: "su-name" }, "Name"), name),
+  h("div.field", h("label", { for: "su-email" }, "Email"), email),
+  h("div.field", h("label", { for: "su-pw" }, "Password (at least 8 characters)"), pw.row),
+  button,
+  h("p.muted.small", "Remember this email and password: you sign in with them if you change phones."));
 }
 
 function signInForm() {
   const email = h("input", { id: "signin-email", type: "email", name: "email", autocomplete: "email", inputmode: "email", spellcheck: "false", maxlength: 120, required: true, placeholder: "Your email…" });
-  const code = h("input", { id: "signin-code", name: "code", type: "password", autocomplete: "current-password", spellcheck: "false", maxlength: 128, required: true, placeholder: "ABCD-1234" });
+  const code = h("input", { id: "signin-code", name: "code", type: "password", autocomplete: "current-password", spellcheck: "false", maxlength: 128, required: true, placeholder: "Password…" });
   const button = h("button.big.primary", { type: "submit" }, "Sign in");
   return h("form.frame.stack.signin-form", {
     onsubmit: async (e) => {
@@ -52,9 +103,9 @@ function signInForm() {
       }
     },
   },
-  h("h2", "Sign in with a code"),
+  h("h2", "Sign in"),
   h("div.field", h("label", { for: "signin-email" }, "Email"), email),
-  h("div.field", h("label", { for: "signin-code" }, "Code from your email (organizers: your password)"),
+  h("div.field", h("label", { for: "signin-code" }, "Password (or the code from an invite email)"),
     h("div.row", h("div.grow", code), h("button.icon-btn", {
       type: "button", "aria-pressed": "false",
       onclick: (e) => { const show = code.type === "password"; code.type = show ? "text" : "password"; e.currentTarget.setAttribute("aria-pressed", String(show)); e.currentTarget.textContent = show ? "Hide" : "Show"; },
