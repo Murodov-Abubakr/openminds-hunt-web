@@ -1,9 +1,9 @@
 // The player's phone: passport, roles, map, compass, chat and leaderboard.
 // No clocks, countdowns or deadlines: final time appears only after finishing.
 
-import { h, mount, send, toast, duration, serverNow, clockHMS, STATIONS, PLACE_LABEL } from "./core.js?v=20f20bc816";
-import { boardTable, seals, chatBox, makeMap, pinIcon, envelopeCard } from "./widgets.js?v=20f20bc816";
-import * as compass from "./compass.js?v=20f20bc816";
+import { h, mount, send, call, session, toast, duration, serverNow, clockHMS, STATIONS, PLACE_LABEL } from "./core.js?v=b18daf852a";
+import { boardTable, seals, chatBox, makeMap, pinIcon, envelopeCard } from "./widgets.js?v=b18daf852a";
+import * as compass from "./compass.js?v=b18daf852a";
 
 const QUICK = ["A phone died", "We are lost", "Need a walker"];
 const ROUTE = (n) => { const i = (n - 1) % 4; return [0, 1, 2, 3].map((k) => STATIONS[(i + k) % 4]); };
@@ -19,6 +19,7 @@ export function playerView(root) {
     stuck: h("section.section"),
     map: h("section.section"),
     chat: h("section.section"),
+    account: h("section.section"),
     board: h("section.section"),
   };
   mount(root, Object.values(parts));
@@ -34,6 +35,7 @@ export function playerView(root) {
       renderEnvelope(s, null);
       renderNoTeam(s);
       mount(parts.board, h("h2", "Leaderboard"), boardTable(s.board));
+      renderAccount(s);
       return;
     }
     mount(parts.head,
@@ -55,6 +57,7 @@ export function playerView(root) {
     renderMap(s);
     renderChat(s);
     mount(parts.board, h("h2", "Leaderboard"), boardTable(s.board, t.number));
+    renderAccount(s);
   }
 
   function renderEnvelope(s, t) {
@@ -73,6 +76,42 @@ export function playerView(root) {
       if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
       parts.envelope.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+  }
+
+  let accountKey = "";
+  function renderAccount(s) {
+    const key = `${s.me.email}`;
+    if (key === accountKey && parts.account.firstChild) return; // keep open forms and typed text
+    accountKey = key;
+    const newEmail = h("input", { id: "acc-email", type: "email", inputmode: "email", autocomplete: "email", spellcheck: "false", maxlength: 120, required: true, placeholder: "New email…" });
+    const pw1 = h("input", { id: "acc-pw1", type: "password", autocomplete: "current-password", maxlength: 128, required: true });
+    const pw2 = h("input", { id: "acc-pw2", type: "password", autocomplete: "current-password", maxlength: 128, required: true });
+    mount(parts.account, h("details.card",
+      h("summary", h("strong", "My account"), h("span.muted.small", ` · ${s.me.email || "no email"}`)),
+      h("form.stack", { style: "margin-top:.75rem", onsubmit: async (e) => {
+        e.preventDefault();
+        try {
+          const r = await call("POST", "/api/me/email", { email: newEmail.value.trim(), password: pw1.value });
+          toast(`Email changed to ${r.email}`); newEmail.value = ""; pw1.value = "";
+        } catch (err) { toast(err.message, true); }
+      } },
+        h("h3", "Change email"),
+        h("label", { for: "acc-email" }, "New email"), newEmail,
+        h("label", { for: "acc-pw1" }, "Your password"), pw1,
+        h("button.primary", { type: "submit" }, "Change email")),
+      h("form.stack", { style: "margin-top:1.5rem", onsubmit: async (e) => {
+        e.preventDefault();
+        if (!confirm("Delete your account for good? You leave your team and are signed out. You can create a new account later.")) return;
+        try {
+          await call("POST", "/api/me/delete", { password: pw2.value });
+          session.clear();
+          location.reload();
+        } catch (err) { toast(err.message, true); }
+      } },
+        h("h3", "Delete my account"),
+        h("p.small.muted", "Removes your email and signs you out. If you lead a team with others in it, pass leadership on first."),
+        h("label", { for: "acc-pw2" }, "Your password"), pw2,
+        h("button.danger", { type: "submit" }, "Delete my account"))));
   }
 
   function typing(part) {
