@@ -251,6 +251,14 @@ table.grid tr.split td { background: color-mix(in srgb, var(--danger) 18%, trans
 .msg .who { display: block; font-size: .8rem; font-weight: 600; opacity: .85; }
 .quick { display: flex; gap: .4rem; flex-wrap: wrap; margin: .5rem 0; }
 
+/* Gate ----------------------------------------------------------------------- */
+
+.gate-row { display: flex; gap: .75rem; align-items: stretch; margin-top: .75rem; flex-wrap: wrap; }
+.stepper { display: flex; align-items: center; gap: .4rem; }
+.stepper span { min-width: 6.5rem; text-align: center; font-weight: 600; }
+.gate-start { flex: 1 1 140px; font-size: 1.25rem; min-height: 56px; }
+.gate-clock { font-size: 2rem; font-weight: 700; margin: .4rem 0 0; }
+
 /* Envelope -------------------------------------------------------------------- */
 
 .envelope { border-color: var(--gold-strong); }

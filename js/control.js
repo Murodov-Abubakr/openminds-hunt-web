@@ -1,8 +1,8 @@
 // Control Room (control) and Admin (admin): table, map, alerts, chat, log, people, settings.
 
-import { h, mount, send, toast, call, clockHM, duration, session, API, STATIONS, PLACE_LABEL } from "./core.js?v=5600cd1879";
-import { boardTable, chatBox, dots, makeMap, pinIcon, confirmTyped } from "./widgets.js?v=5600cd1879";
-import { linkAction, addMemberForm } from "./staff.js?v=5600cd1879";
+import { h, mount, send, toast, call, clockHM, duration, serverNow, session, API, STATIONS, PLACE_LABEL } from "./core.js?v=ed527b07f0";
+import { boardTable, chatBox, dots, makeMap, pinIcon, confirmTyped } from "./widgets.js?v=ed527b07f0";
+import { linkAction, addMemberForm } from "./staff.js?v=ed527b07f0";
 
 const TABS = [["overview", "Teams"], ["map", "Map"], ["chat", "Chat"], ["log", "Log"], ["people", "People"], ["settings", "Settings"]];
 const ROLES = ["control", "registration", "gate", "keeper:reed", "keeper:leaf", "keeper:bird", "keeper:stage", "door", "admin"];
@@ -20,6 +20,13 @@ export function controlView(root) {
   mount(root, h("h1", "Control Room"), tabBar, alerts, panel, mapPanel);
 
   const isAdmin = () => state && state.me.role === "admin";
+  // Live running time of playing teams (staff only).
+  setInterval(() => {
+    for (const el of root.querySelectorAll("[data-started]")) {
+      const secs = Math.max(0, Math.floor(serverNow() - Number(el.dataset.started)));
+      el.textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+    }
+  }, 1000);
 
   function render(s) {
     state = s;
@@ -61,7 +68,8 @@ export function controlView(root) {
             h("button.icon-btn", { type: "button", "aria-label": `Remove a hint from team ${t.number}`, onclick: () => send("/api/control/hint", { team: t.number, delta: -1 }) }, "−"),
             h("span.num", String(t.hints)),
             h("button.icon-btn", { type: "button", "aria-label": `Add a hint to team ${t.number}`, onclick: () => send("/api/control/hint", { team: t.number, delta: 1 }) }, "+"))),
-          h("td", t.status, t.split ? h("span.chip.alert", { style: "margin-left:.3rem" }, "split") : null),
+          h("td", t.status === "playing" ? ["running ", h("span.num", { "data-started": String(t.started) }, "")] : t.status,
+            t.split ? h("span.chip.alert", { style: "margin-left:.3rem" }, "split") : null),
           h("td.num", t.score !== null ? `${duration(t.score)} (#${t.rank})` : ""),
           h("td", h("button.icon-btn", { type: "button", onclick: () => { openTeam = t.number; tab = "people"; render(state); } }, "Edit")))))])),
       h("div.section", h("h2", "Leaderboard"), boardTable(s.board)),

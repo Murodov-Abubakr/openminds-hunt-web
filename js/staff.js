@@ -1,7 +1,7 @@
 // Volunteer screens: Registration, Gate, Keepers and Door. Big buttons, one tap each.
 
-import { h, mount, send, toast, call, clockHM, serverNow, STATIONS, PLACE_LABEL } from "./core.js?v=5600cd1879";
-import { boardTable, showQr } from "./widgets.js?v=5600cd1879";
+import { h, mount, send, toast, call, clockHM, serverNow, STATIONS, PLACE_LABEL } from "./core.js?v=ed527b07f0";
+import { boardTable, showQr } from "./widgets.js?v=ed527b07f0";
 
 function keepFocus(container, fn) {
   // Skip re-rendering a region while someone is typing in it.
@@ -96,38 +96,71 @@ export function addMemberForm(team) {
 // Gate ------------------------------------------------------------------------------------
 
 export function gateView(root) {
-  const head = h("section.frame.gilded", h("h1", "The Gate"), h("p", "Count everyone present, including people whose phone is off, then tap Start."));
+  const head = h("section.frame.gilded", h("h1", "The Gate"),
+    h("p", "When a team arrives: check the count (everyone present, including people whose phone is off), then tap ▶ Start. Their time starts at that tap."));
   const handover = h("div", { "aria-live": "assertive" });
-  const list = h("section.cards", { "aria-labelledby": "gate-teams" });
+  const waiting = h("section.cards", { "aria-labelledby": "gate-waiting" });
+  const running = h("section.cards", { "aria-labelledby": "gate-running" });
   const board = h("section.section");
-  mount(root, head, handover, h("h2", { id: "gate-teams" }, "Teams"), list, board);
+  mount(root, head, handover,
+    h("h2", { id: "gate-waiting" }, "Waiting to start"), waiting,
+    h("h2", { id: "gate-running", style: "margin-top:2rem" }, "Started"), running, board);
   const counts = {};
 
-  return (s) => {
-    keepFocus(list, () => mount(list, s.teams.map((t) => {
-      const input = h("input.num", { id: `people-${t.number}`, type: "number", inputmode: "numeric", min: 1, max: 12, value: counts[t.number] ?? t.people ?? t.members.length,
-        "aria-label": `People present in team ${t.number}`, oninput: (e) => { counts[t.number] = e.target.value; } });
-      const joined = t.members.filter((m) => m.joined).length;
-      return h("article.card" + (t.started ? "" : ".is-heading"),
-        h("h3", `${t.number}. ${t.name}`),
-        h("p.small", `Route ${t.route} · ${t.members.length} registered · ${joined} phone${joined === 1 ? "" : "s"} joined · leader: `, h("strong", t.leader || "not chosen")),
-        t.started ? h("p", h("span.chip.solved", "Started"), ` at ${clockHM(t.started)} with ${t.people} people. First riddle: ${t.first.name}.`) :
-          h("div.row",
-            h("div", { style: "width:7rem" }, h("label.small", { for: `people-${t.number}` }, "People"), input),
-            h("button.primary.grow", {
-              type: "button", style: "align-self:end",
-              onclick: async () => {
-                const people = Number(input.value);
-                if (!t.leader && !confirm(`Team ${t.number} has no leader yet. Start anyway?`)) return;
-                if (!confirm(`Start team ${t.number} with ${people} people? This locks the leader and name.`)) return;
-                const res = await send("/api/gate/start", { team: t.number, people });
-                if (res.handover) mount(handover, h("div.handover.frame", { style: "font-size:1.25rem" }, `Team ${t.number}: hand over the riddle for ${res.handover.name}`));
-                else if (res.queued) toast("Start saved offline. It will send when the network returns.");
-              },
-            }, `Start team ${t.number}`)));
-    })));
-    mount(board, h("h2", "Leaderboard"), boardTable(s.board));
+  // Live running time for started teams (staff screens only; players never see a clock).
+  const tick = () => {
+    for (const el of root.querySelectorAll("[data-started]")) {
+      const secs = Math.max(0, Math.floor(serverNow() - Number(el.dataset.started)));
+      const hh = Math.floor(secs / 3600), mm = Math.floor((secs % 3600) / 60), ss = secs % 60;
+      el.textContent = (hh ? `${hh}:${String(mm).padStart(2, "0")}` : String(mm)) + `:${String(ss).padStart(2, "0")}`;
+    }
   };
+  setInterval(tick, 1000);
+
+  const startTeam = async (t) => {
+    const people = counts[t.number] ?? t.members.length;
+    if (!confirm(`Start team ${t.number} (${t.name}) now with ${people} people?`)) return;
+    const res = await send("/api/gate/start", { team: t.number, people });
+    if (res.handover) {
+      mount(handover, h("div.handover.frame", { style: "font-size:1.3rem" },
+        `▶ Team ${t.number} started. Hand over the riddle for ${res.handover.name}.`));
+      if (navigator.vibrate) navigator.vibrate(80);
+    } else if (res.queued) {
+      toast("Start saved on this phone. It will send when the network returns.");
+    }
+  };
+
+  const waitingCard = (t) => {
+    const n = counts[t.number] ?? t.members.length;
+    const set = (v) => { counts[t.number] = Math.min(12, Math.max(1, v)); render(last); };
+    const joined = t.members.filter((m) => m.joined).length;
+    return h("article.card.is-heading",
+      h("div.row", h("h3.grow", `${t.number}. ${t.name}`), h("span.small.muted", `Route ${t.route}`)),
+      h("p.small.muted", `${t.members.length} registered · ${joined} phone${joined === 1 ? "" : "s"} signed in · leader: `, h("strong", t.leader || "not chosen")),
+      h("div.gate-row",
+        h("div.stepper", { role: "group", "aria-label": `People present in team ${t.number}` },
+          h("button", { type: "button", "aria-label": "One fewer person", onclick: () => set(n - 1) }, "−"),
+          h("span.num", { "aria-live": "polite" }, `${n} ${n === 1 ? "person" : "people"}`),
+          h("button", { type: "button", "aria-label": "One more person", onclick: () => set(n + 1) }, "+")),
+        h("button.primary.gate-start", { type: "button", onclick: () => startTeam(t) }, "▶ Start")));
+  };
+
+  const runningCard = (t) => h("article.card",
+    h("div.row", h("h3.grow", `${t.number}. ${t.name}`), h("span.chip.solved", "Running")),
+    h("p.gate-clock", h("span.num", { "data-started": String(t.started) }, ""), h("span.small.muted", ` since ${clockHM(t.started)}`)),
+    h("p.small.muted", `${t.people} people · first riddle: ${t.first.name}`));
+
+  let last = null;
+  function render(s) {
+    last = s;
+    const notStarted = s.teams.filter((t) => !t.started);
+    const started = s.teams.filter((t) => t.started).sort((a, b) => b.started - a.started);
+    mount(waiting, notStarted.length ? notStarted.map(waitingCard) : h("p.muted", "No team is waiting."));
+    mount(running, started.length ? started.map(runningCard) : h("p.muted", "No team has started yet."));
+    tick();
+    mount(board, h("h2", "Leaderboard"), boardTable(s.board));
+  }
+  return render;
 }
 
 // Keeper and Door --------------------------------------------------------------------------
