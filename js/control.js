@@ -1,8 +1,8 @@
 // Control Room (control) and Admin (admin): table, map, alerts, chat, log, people, settings.
 
-import { h, mount, send, toast, call, clockHM, duration, session, API, STATIONS, PLACE_LABEL } from "./core.js?v=15cd746ac8";
-import { boardTable, chatBox, dots, makeMap, pinIcon, confirmTyped } from "./widgets.js?v=15cd746ac8";
-import { linkAction, addMemberForm } from "./staff.js?v=15cd746ac8";
+import { h, mount, send, toast, call, clockHM, duration, session, API, STATIONS, PLACE_LABEL } from "./core.js?v=20f20bc816";
+import { boardTable, chatBox, dots, makeMap, pinIcon, confirmTyped } from "./widgets.js?v=20f20bc816";
+import { linkAction, addMemberForm } from "./staff.js?v=20f20bc816";
 
 const TABS = [["overview", "Teams"], ["map", "Map"], ["chat", "Chat"], ["log", "Log"], ["people", "People"], ["settings", "Settings"]];
 const ROLES = ["control", "registration", "gate", "keeper:reed", "keeper:leaf", "keeper:bird", "keeper:stage", "door", "admin"];
@@ -162,7 +162,14 @@ export function controlView(root) {
       canShow(role) ? h("button.icon-btn", { type: "button", onclick: () => linkAction(p.id, "show") }, "Show QR") : null,
       h("button.icon-btn", { type: "button", onclick: () => linkAction(p.id, "email") }, "Resend"),
       canShow(role) ? h("button.icon-btn.danger", { type: "button", onclick: () => { if (confirm(`Sign ${p.name} out everywhere and cancel their links?`)) call("POST", "/api/people/revoke", { person: p.id }).then(() => toast("Revoked")).catch((e) => toast(e.message, true)); } }, "Revoke") : null,
-      canShow(role) ? h("button.icon-btn", { type: "button", onclick: () => editPerson(p) }, "Edit") : null));
+      canShow(role) ? h("button.icon-btn", { type: "button", onclick: () => editPerson(p) }, "Edit") : null,
+      canShow(role) && p.id !== state.me.id ? h("button.icon-btn.danger", {
+        type: "button",
+        onclick: () => {
+          if (!confirm(`Delete ${p.name}’s account? They are signed out everywhere and removed from their team. Their past game actions stay in the log.`)) return;
+          call("POST", "/api/people/remove", { person: p.id }).then(() => toast(`${p.name}’s account deleted`)).catch((e) => toast(e.message, true));
+        },
+      }, "Delete") : null));
     const invite = () => {
       const name = h("input", { id: "inv-name", name: "name", autocomplete: "off", maxlength: 40 });
       const email = h("input", { id: "inv-mail", name: "email", type: "email", autocomplete: "off", spellcheck: "false", maxlength: 120 });
