@@ -1,9 +1,9 @@
 // Boot: exchange the link token, then render the screen for this person's role.
 
-import { h, mount, call, session, SIGN_OUT, liveStream, onQueueChange, flush, initTheme, setSignedOutHandler, syncClock, toast, API } from "./core.js?v=1a54b40e1c";
-import { playerView } from "./player.js?v=1a54b40e1c";
-import { registrationView, gateView, placeView } from "./staff.js?v=1a54b40e1c";
-import { controlView } from "./control.js?v=1a54b40e1c";
+import { h, mount, call, session, SIGN_OUT, liveStream, onQueueChange, flush, initTheme, setSignedOutHandler, syncClock, toast, API } from "./core.js?v=c2cd978a97";
+import { playerView } from "./player.js?v=c2cd978a97";
+import { registrationView, gateView, placeView } from "./staff.js?v=c2cd978a97";
+import { controlView } from "./control.js?v=c2cd978a97";
 
 const main = document.getElementById("main");
 const net = document.getElementById("net");
@@ -32,7 +32,7 @@ function landing(message) {
 
 function signInForm() {
   const email = h("input", { id: "signin-email", type: "email", name: "email", autocomplete: "email", inputmode: "email", spellcheck: "false", maxlength: 120, required: true, placeholder: "Your email…" });
-  const code = h("input", { id: "signin-code", name: "code", autocomplete: "one-time-code", autocapitalize: "characters", spellcheck: "false", maxlength: 12, required: true, placeholder: "ABCD-1234" });
+  const code = h("input", { id: "signin-code", name: "code", type: "password", autocomplete: "current-password", spellcheck: "false", maxlength: 128, required: true, placeholder: "ABCD-1234" });
   const button = h("button.big.primary", { type: "submit" }, "Sign in");
   return h("form.frame.stack.signin-form", {
     onsubmit: async (e) => {
@@ -54,7 +54,11 @@ function signInForm() {
   },
   h("h2", "Sign in with a code"),
   h("div.field", h("label", { for: "signin-email" }, "Email"), email),
-  h("div.field", h("label", { for: "signin-code" }, "Code (8 letters and numbers)"), code),
+  h("div.field", h("label", { for: "signin-code" }, "Code from your email (organizers: your password)"),
+    h("div.row", h("div.grow", code), h("button.icon-btn", {
+      type: "button", "aria-pressed": "false",
+      onclick: (e) => { const show = code.type === "password"; code.type = show ? "text" : "password"; e.currentTarget.setAttribute("aria-pressed", String(show)); e.currentTarget.textContent = show ? "Hide" : "Show"; },
+    }, "Show"))),
   button);
 }
 

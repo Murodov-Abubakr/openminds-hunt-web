@@ -1,8 +1,8 @@
 // Control Room (control) and Admin (admin): table, map, alerts, chat, log, people, settings.
 
-import { h, mount, send, toast, call, clockHM, duration, session, API, STATIONS, PLACE_LABEL } from "./core.js?v=1a54b40e1c";
-import { boardTable, chatBox, dots, makeMap, pinIcon, confirmTyped } from "./widgets.js?v=1a54b40e1c";
-import { linkAction, addMemberForm } from "./staff.js?v=1a54b40e1c";
+import { h, mount, send, toast, call, clockHM, duration, session, API, STATIONS, PLACE_LABEL } from "./core.js?v=c2cd978a97";
+import { boardTable, chatBox, dots, makeMap, pinIcon, confirmTyped } from "./widgets.js?v=c2cd978a97";
+import { linkAction, addMemberForm } from "./staff.js?v=c2cd978a97";
 
 const TABS = [["overview", "Teams"], ["map", "Map"], ["chat", "Chat"], ["log", "Log"], ["people", "People"], ["settings", "Settings"]];
 const ROLES = ["control", "registration", "gate", "keeper:reed", "keeper:leaf", "keeper:bird", "keeper:stage", "door", "admin"];

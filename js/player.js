@@ -1,9 +1,9 @@
 // The player's phone: passport, roles, map, compass, chat and leaderboard.
 // No clocks, countdowns or deadlines: final time appears only after finishing.
 
-import { h, mount, send, toast, duration, serverNow, clockHMS, STATIONS, PLACE_LABEL } from "./core.js?v=1a54b40e1c";
-import { boardTable, seals, chatBox, makeMap, pinIcon } from "./widgets.js?v=1a54b40e1c";
-import * as compass from "./compass.js?v=1a54b40e1c";
+import { h, mount, send, toast, duration, serverNow, clockHMS, STATIONS, PLACE_LABEL } from "./core.js?v=c2cd978a97";
+import { boardTable, seals, chatBox, makeMap, pinIcon } from "./widgets.js?v=c2cd978a97";
+import * as compass from "./compass.js?v=c2cd978a97";
 
 const QUICK = ["A phone died", "We are lost", "Need a walker"];
 const ROUTE = (n) => { const i = (n - 1) % 4; return [0, 1, 2, 3].map((k) => STATIONS[(i + k) % 4]); };
