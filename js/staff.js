@@ -12,7 +12,7 @@ function keepFocus(container, fn) {
 export async function linkAction(person, mode) {
   try {
     const res = await call("POST", "/api/people/link", { person, mode });
-    if (mode === "show") showQr(res.name, res.url);
+    if (mode === "show") showQr(res.name, res.url, res.code);
     else toast("Link sent by email");
   } catch (e) { toast(e.message, true); }
 }

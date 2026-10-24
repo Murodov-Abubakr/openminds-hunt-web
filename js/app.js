@@ -25,8 +25,37 @@ function landing(message) {
     h("h1", "The Forgotten ", h("span.gold", "Manuscript")),
     h("p", "Open Minds treasure hunt."),
     message ? h("p.frame", { role: "alert" }, message) : null,
-    h("p", "Open the personal link from your email on the phone you will carry today. No email? Ask the registration desk to show your QR code."),
-    h("p.muted.small", "The paper passport is the official record. If this app stops, the game goes on.")));
+    h("p", "Open the personal link from your email on the phone you will carry today, or sign in below with your email and the code from that email."),
+    signInForm(),
+    h("p.muted.small", "No email? Ask the registration desk to show your QR code. The paper passport is the official record; if this app stops, the game goes on.")));
+}
+
+function signInForm() {
+  const email = h("input", { id: "signin-email", type: "email", name: "email", autocomplete: "email", inputmode: "email", spellcheck: "false", maxlength: 120, required: true, placeholder: "Your email…" });
+  const code = h("input", { id: "signin-code", name: "code", autocomplete: "one-time-code", autocapitalize: "characters", spellcheck: "false", maxlength: 12, required: true, placeholder: "ABCD-1234" });
+  const button = h("button.big.primary", { type: "submit" }, "Sign in");
+  return h("form.frame.stack.signin-form", {
+    onsubmit: async (e) => {
+      e.preventDefault();
+      if (button.disabled) return;
+      button.disabled = true;
+      button.textContent = "Signing in…";
+      try {
+        const res = await call("POST", "/api/login-code", { email: email.value.trim(), code: code.value.trim(), device: navigator.userAgent.slice(0, 60) }, { auth: false });
+        session.set(res.session);
+        start();
+      } catch (err) {
+        toast(err.message, true);
+        button.disabled = false;
+        button.textContent = "Sign in";
+        code.focus();
+      }
+    },
+  },
+  h("h2", "Sign in with a code"),
+  h("div.field", h("label", { for: "signin-email" }, "Email"), email),
+  h("div.field", h("label", { for: "signin-code" }, "Code (8 letters and numbers)"), code),
+  button);
 }
 
 function pickView(role) {

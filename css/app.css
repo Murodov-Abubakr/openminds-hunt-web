@@ -309,6 +309,8 @@ table.grid tr.split td { background: color-mix(in srgb, var(--danger) 18%, trans
 :root[data-theme="light"] .toast.err { color: #fff; }
 .overlay { position: fixed; inset: 0; z-index: 2500; overscroll-behavior: contain; background: rgba(0, 0, 0, .7); display: grid; place-items: center; padding: 16px; }
 .overlay .frame { max-width: 420px; width: 100%; max-height: 90vh; overflow: auto; overscroll-behavior: contain; }
+.signin-code { display: inline-block; margin-top: .35rem; font-size: 1.8rem; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
+.signin-form { margin-top: 1.5rem; max-width: 420px; }
 .qr { background: #fff; padding: 12px; border-radius: var(--r-sm); width: 100%; max-width: 320px; margin: 0 auto; display: block; image-rendering: pixelated; }
 
 .landing { text-align: left; padding-top: 8vh; }

@@ -95,7 +95,7 @@ export async function makeMap(el, center, bbox) {
 
 // QR code overlay for a person's login link ------------------------------------------------
 
-export async function showQr(name, url) {
+export async function showQr(name, url, code = "") {
   let qr;
   try {
     await loadScript(QR.js, QR.sri);
@@ -118,8 +118,10 @@ export async function showQr(name, url) {
   const ov = h("div.overlay", { role: "dialog", "aria-modal": "true", "aria-label": `Login link for ${name}`, onclick: (e) => { if (e.target === ov) close(); } },
     h("div.frame.stack",
       h("h2", name),
-      h("p", "Scan with the phone camera. This replaces any earlier link for this person."),
+      h("p", "Scan with the phone camera. This replaces any earlier link and code for this person."),
       canvas,
+      code ? h("p", { style: "text-align:center" }, "Or sign in with their email and this code:", h("br"),
+        h("strong.signin-code", { translate: "no" }, code)) : null,
       h("button.big", { type: "button", onclick: close }, "Done")));
   document.addEventListener("keydown", esc);
   document.body.append(ov);
